@@ -123,10 +123,12 @@ class MappableDefaultMarkerManager internal constructor() : ViewGroupManager<Def
             "animatedMoveTo" -> {
                 val markerPoint = args!!.getMap(0)
                 val moveDuration = args.getInt(1)
-                val lon = markerPoint.getDouble("lon").toFloat()
-                val lat = markerPoint.getDouble("lat").toFloat()
-                val point = Point(lat.toDouble(), lon.toDouble())
-                castToMarkerView(view).animatedMoveTo(point, moveDuration.toFloat())
+                val lon = markerPoint?.getDouble("lon")?.toFloat()
+                val lat = markerPoint?.getDouble("lat")?.toFloat()
+                if (lon !=null && lat !=null){
+                    val point = Point(lat.toDouble(), lon.toDouble())
+                    castToMarkerView(view).animatedMoveTo(point, moveDuration.toFloat())
+                }
                 return
             }
 

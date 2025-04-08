@@ -84,6 +84,27 @@ class MappableViewManager internal constructor() : ViewGroupManager<MappableView
                     MapBuilder.of("bubbled", "onWorldToScreenPointsReceived")
                 )
             )
+            .put(
+                "onEnterIndoorPlan",
+                MapBuilder.of(
+                    "phasedRegistrationNames",
+                    MapBuilder.of("bubbled", "onEnterIndoorPlan")
+                )
+            ) 
+            .put(
+                "onLeftIndoorPlan",
+                MapBuilder.of(
+                    "phasedRegistrationNames",
+                    MapBuilder.of("bubbled", "onLeftIndoorPlan")
+                )
+            )
+            .put(
+                "onActiveIndoorLevelChanged",
+                MapBuilder.of(
+                    "phasedRegistrationNames",
+                    MapBuilder.of("bubbled", "onActiveIndoorLevelChanged")
+                )
+            )
             .build()
     }
 
@@ -99,6 +120,7 @@ class MappableViewManager internal constructor() : ViewGroupManager<MappableView
         map["fitMarkers"] = FIT_MARKERS
         map["getScreenPoints"] = GET_SCREEN_POINTS
         map["getWorldPoints"] = GET_WORLD_POINTS
+        map["setIndoorLevel"] = SET_INDOOR_LEVEL
 
         return map
     }
@@ -157,6 +179,10 @@ class MappableViewManager internal constructor() : ViewGroupManager<MappableView
 
             "getWorldPoints" -> if (args != null) {
                 view.emitScreenToWorldPoints(args.getArray(0), args.getString(1))
+            }
+
+            "setIndoorLevel" -> if (args != null) {
+                view.setIndoorLevel(args.getString(0)!!)
             }
 
             else -> throw IllegalArgumentException(
@@ -221,7 +247,7 @@ class MappableViewManager internal constructor() : ViewGroupManager<MappableView
         view: View,
         jsPoints: ReadableArray?,
         jsVehicles: ReadableArray?,
-        id: String
+        id: String?
     ) {
         if (jsPoints != null) {
             val points = ArrayList<Point?>()
@@ -237,7 +263,7 @@ class MappableViewManager internal constructor() : ViewGroupManager<MappableView
 
             if (jsVehicles != null) {
                 for (i in 0 until jsVehicles.size()) {
-                    vehicles.add(jsVehicles.getString(i))
+                    vehicles.add(jsVehicles.getString(i)!!)
                 }
             }
 
@@ -281,6 +307,11 @@ class MappableViewManager internal constructor() : ViewGroupManager<MappableView
     @ReactProp(name = "nightMode")
     fun setNightMode(view: View, nightMode: Boolean?) {
         castToMappableMapView(view).setNightMode(nightMode ?: false)
+    }
+
+    @ReactProp(name = "showsIndoors")
+    fun setIndoorEnabled(view: View, showsIndoors: Boolean?) {
+        castToMappableMapView(view).setIndoorEnabled(showsIndoors ?: false)
     }
 
     @ReactProp(name = "scrollGesturesEnabled")
@@ -376,5 +407,6 @@ class MappableViewManager internal constructor() : ViewGroupManager<MappableView
         private const val FIT_MARKERS = 8
         private const val GET_SCREEN_POINTS = 9
         private const val GET_WORLD_POINTS = 10
+        private const val SET_INDOOR_LEVEL = 11
     }
 }

@@ -24,7 +24,7 @@ class ClusteredMappableView(context: Context?) : MappableView(context), ClusterL
     private val placemarksMap: HashMap<String?, PlacemarkMapObject?> = HashMap<String?, PlacemarkMapObject?>()
     private var pointsList = ArrayList<Point>()
 
-    fun setClusteredMarkers(points: ArrayList<Any>) {
+    fun setClusteredMarkers(points: ArrayList<Any?>) {
         clusterCollection.clear()
         placemarksMap.clear()
         val pt = ArrayList<Point>()

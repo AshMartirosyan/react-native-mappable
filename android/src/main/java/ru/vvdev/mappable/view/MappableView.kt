@@ -15,7 +15,6 @@ import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.WritableNativeArray
 import com.facebook.react.uimanager.events.RCTEventEmitter
-import ru.vvdev.mappable.MappableDefaultMarkerManager
 import ru.vvdev.mappable.models.ReactMapObject
 import ru.vvdev.mappable.utils.Callback
 import ru.vvdev.mappable.utils.ImageLoader.DownloadImageBitmap
@@ -38,6 +37,8 @@ import world.mappable.mapkit.geometry.Geometry
 import world.mappable.mapkit.geometry.Point
 import world.mappable.mapkit.geometry.Polyline
 import world.mappable.mapkit.geometry.SubpolylineHelper
+import world.mappable.mapkit.indoor.IndoorPlan
+import world.mappable.mapkit.indoor.IndoorStateListener
 import world.mappable.mapkit.layers.ObjectEvent
 import world.mappable.mapkit.logo.Alignment
 import world.mappable.mapkit.logo.HorizontalAlignment
@@ -77,13 +78,13 @@ import javax.annotation.Nonnull
 
 
 open class MappableView(context: Context?) : MapView(context), UserLocationObjectListener,
-    CameraListener, InputListener, TrafficListener, MapLoadedListener {
+    CameraListener, InputListener, TrafficListener, MapLoadedListener, IndoorStateListener {
     private var mViewParent: ViewParent? = null
     private var userLocationIcon = ""
     private var userLocationIconScale = 1f
     private var userLocationBitmap: Bitmap? = null
     private val routeMng = RouteManager()
-    private var routeOptions: RouteOptions = RouteOptions(FitnessOptions(false))
+    private var routeOptions: RouteOptions = RouteOptions(FitnessOptions(false, false))
     private val masstransitRouter = TransportFactory.getInstance().createMasstransitRouter()
     private val drivingRouter: DrivingRouter
     private val pedestrianRouter = TransportFactory.getInstance().createPedestrianRouter()
@@ -94,6 +95,7 @@ open class MappableView(context: Context?) : MapView(context), UserLocationObjec
     private var trafficLayer: TrafficLayer? = null
     private var maxFps = 60f
     private var initializedRegion = false;
+    private var activeIndoorPlan: IndoorPlan? = null;
 
     private var userLocationView: UserLocationView? = null
 
@@ -101,7 +103,7 @@ open class MappableView(context: Context?) : MapView(context), UserLocationObjec
         drivingRouter = DirectionsFactory.getInstance().createDrivingRouter(DrivingRouterType.COMBINED)
         mapWindow.map.addCameraListener(this)
         mapWindow.map.addInputListener(this)
-        mapWindow.map.setMapLoadedListener(this)
+        mapWindow.map.addIndoorStateListener(this)
     }
 
     // REF
@@ -220,42 +222,49 @@ open class MappableView(context: Context?) : MapView(context), UserLocationObjec
             .receiveEvent(getId(), "visibleRegion", result)
     }
 
-    fun emitWorldToScreenPoints(worldPoints: ReadableArray, id: String?) {
-        val screenPoints = Arguments.createArray()
+    fun emitWorldToScreenPoints(worldPoints: ReadableArray?, id: String?) {
 
-        for (i in 0 until worldPoints.size()) {
-            val p = worldPoints.getMap(i)
-            val worldPoint = Point(p.getDouble("lat"), p.getDouble("lon"))
-            val screenPoint = mapWindow.worldToScreen(worldPoint)
-            screenPoints.pushMap(screenPointToJSON(screenPoint))
+        if(worldPoints != null){
+            val screenPoints = Arguments.createArray()
+            for (i in 0 until worldPoints.size()) {
+                val p = worldPoints.getMap(i)
+                if (p != null){
+                    val worldPoint = Point(p.getDouble("lat"), p.getDouble("lon"))
+                    val screenPoint = mapWindow.worldToScreen(worldPoint)
+                    screenPoints.pushMap(screenPointToJSON(screenPoint))
+                }
+            }
+
+            val result = Arguments.createMap()
+            result.putString("id", id)
+            result.putArray("screenPoints", screenPoints)
+
+            val reactContext = context as ReactContext
+            reactContext.getJSModule(RCTEventEmitter::class.java)
+                .receiveEvent(getId(), "worldToScreenPoints", result)
         }
-
-        val result = Arguments.createMap()
-        result.putString("id", id)
-        result.putArray("screenPoints", screenPoints)
-
-        val reactContext = context as ReactContext
-        reactContext.getJSModule(RCTEventEmitter::class.java)
-            .receiveEvent(getId(), "worldToScreenPoints", result)
     }
 
-    fun emitScreenToWorldPoints(screenPoints: ReadableArray, id: String?) {
-        val worldPoints = Arguments.createArray()
+    fun emitScreenToWorldPoints(screenPoints: ReadableArray?, id: String?) {
+        if (screenPoints!=null){
+            val worldPoints = Arguments.createArray()
+            for (i in 0 until screenPoints.size()) {
+                val p = screenPoints.getMap(i)
+                if(p!=null){
+                    val screenPoint = ScreenPoint(p.getDouble("x").toFloat(), p.getDouble("y").toFloat())
+                    val worldPoint = mapWindow.screenToWorld(screenPoint)
+                    worldPoints.pushMap(worldPointToJSON(worldPoint))
+                }
+            }
 
-        for (i in 0 until screenPoints.size()) {
-            val p = screenPoints.getMap(i)
-            val screenPoint = ScreenPoint(p.getDouble("x").toFloat(), p.getDouble("y").toFloat())
-            val worldPoint = mapWindow.screenToWorld(screenPoint)
-            worldPoints.pushMap(worldPointToJSON(worldPoint))
+            val result = Arguments.createMap()
+            result.putString("id", id)
+            result.putArray("worldPoints", worldPoints)
+
+            val reactContext = context as ReactContext
+            reactContext.getJSModule(RCTEventEmitter::class.java)
+                .receiveEvent(getId(), "screenToWorldPoints", result)
         }
-
-        val result = Arguments.createMap()
-        result.putString("id", id)
-        result.putArray("worldPoints", worldPoints)
-
-        val reactContext = context as ReactContext
-        reactContext.getJSModule(RCTEventEmitter::class.java)
-            .receiveEvent(getId(), "screenToWorldPoints", result)
     }
 
     fun setZoom(zoom: Float?, duration: Float, animation: Int) {
@@ -294,7 +303,7 @@ open class MappableView(context: Context?) : MapView(context), UserLocationObjec
             val _points = ArrayList<RequestPoint>()
             for (i in points.indices) {
                 val point = points[i]
-                val _p = RequestPoint(point!!, RequestPointType.WAYPOINT, null, null)
+                val _p = RequestPoint(point!!, RequestPointType.WAYPOINT, null, null, null)
                 _points.add(_p)
             }
 
@@ -309,7 +318,7 @@ open class MappableView(context: Context?) : MapView(context), UserLocationObjec
         val _points = ArrayList<RequestPoint>()
         for (i in points.indices) {
             val point = points[i]
-            _points.add(RequestPoint(point!!, RequestPointType.WAYPOINT, null, null))
+            _points.add(RequestPoint(point!!, RequestPointType.WAYPOINT, null, null, null))
         }
         val listener: Session.RouteListener = object : Session.RouteListener {
             override fun onMasstransitRoutes(routes: List<Route>) {
@@ -419,6 +428,10 @@ open class MappableView(context: Context?) : MapView(context), UserLocationObjec
             cameraPosition.tilt
         )
         mapWindow.map.move(cameraPosition, Animation(Animation.Type.SMOOTH, 0.7f), null)
+    }
+
+    fun setIndoorLevel(indoorLevelId: String){
+            activeIndoorPlan?.activeLevelId = indoorLevelId
     }
 
     // PROPS
@@ -545,6 +558,10 @@ open class MappableView(context: Context?) : MapView(context), UserLocationObjec
 
     fun setNightMode(nightMode: Boolean?) {
         mapWindow.map.isNightModeEnabled = nightMode!!
+    }
+
+    fun setIndoorEnabled(showsIndoors: Boolean?) {
+        mapWindow.map.isIndoorEnabled = showsIndoors!!
     }
 
     fun setScrollGesturesEnabled(scrollGesturesEnabled: Boolean?) {
@@ -895,6 +912,41 @@ open class MappableView(context: Context?) : MapView(context), UserLocationObjec
     }
 
     override fun onTrafficExpired() {
+    }
+
+    override fun onActivePlanFocused(activePlan: IndoorPlan) {
+        activeIndoorPlan = activePlan
+        val data = Arguments.createMap()
+        val levelsArray = Arguments.createArray()
+        for (level in activePlan.levels) {
+            val levelMap = Arguments.createMap()
+            levelMap.putString("id", level.id)
+            levelMap.putString("name", level.name)
+            levelMap.putBoolean("isUnderground", level.isUnderground)
+
+            levelsArray.pushMap(levelMap)
+        }
+
+        data.putArray("levels", levelsArray)
+        data.putString("activeLevelId", activePlan.activeLevelId)
+
+        val reactContext = context as ReactContext
+
+        reactContext.getJSModule(RCTEventEmitter::class.java)
+            .receiveEvent(id, "onEnterIndoorPlan", data)
+    }
+
+    override fun onActivePlanLeft() {
+        activeIndoorPlan = null
+        val reactContext = context as ReactContext
+        reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "onLeftIndoorPlan", null)
+    }
+
+    override fun onActiveLevelChanged(activeLevelId: String) {
+        val data = Arguments.createMap()
+        data.putString("activeLevelId", activeLevelId)
+        val reactContext = context as ReactContext
+        reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "onActiveIndoorLevelChanged", null)
     }
 
     companion object {

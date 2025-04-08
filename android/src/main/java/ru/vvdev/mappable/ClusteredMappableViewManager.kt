@@ -230,7 +230,7 @@ class ClusteredMappableViewManager internal constructor() : ViewGroupManager<Clu
         view: View,
         jsPoints: ReadableArray?,
         jsVehicles: ReadableArray?,
-        id: String
+        id: String?
     ) {
         if (jsPoints != null) {
             val points = ArrayList<Point?>()
@@ -243,7 +243,9 @@ class ClusteredMappableViewManager internal constructor() : ViewGroupManager<Clu
             val vehicles = ArrayList<String>()
             if (jsVehicles != null) {
                 for (i in 0 until jsVehicles.size()) {
-                    vehicles.add(jsVehicles.getString(i))
+                    val vehicle = jsVehicles.getString(i)
+                    if(vehicle!=null)
+                    vehicles.add(vehicle)
                 }
             }
             castToMappableMapView(view).findRoutes(points, vehicles, id)
