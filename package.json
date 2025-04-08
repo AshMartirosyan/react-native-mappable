@@ -1,5 +1,5 @@
 {
-  "name": "react-native-mappable",
+  "name": "@innolink-ninja/react-native-mappable",
   "version": "4.8.8",
   "description": "Mappable Kit for react-native",
   "main": "build/index.js",
