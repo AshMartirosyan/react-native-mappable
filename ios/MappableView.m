@@ -26,6 +26,9 @@ RCT_EXPORT_MODULE()
         @"onMapLoaded",
         @"onWorldToScreenPointsReceived",
         @"onScreenToWorldPointsReceived"
+        @"onEnterIndoorPlan"
+        @"onLeftIndoorPlan"
+        @"onActiveIndoorLevelChanged"
     ];
 }
 
@@ -62,6 +65,9 @@ RCT_EXPORT_VIEW_PROPERTY(onMapLongPress, RCTBubblingEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onMapLoaded, RCTBubblingEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onWorldToScreenPointsReceived, RCTBubblingEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onScreenToWorldPointsReceived, RCTBubblingEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onEnterIndoorPlan, RCTBubblingEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onLeftIndoorPlan, RCTBubblingEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onActiveIndoorLevelChanged, RCTBubblingEventBlock)
 
 RCT_CUSTOM_VIEW_PROPERTY(userLocationAccuracyFillColor, NSNumber, RNMView) {
     [view setUserLocationAccuracyFillColor:[RCTConvert UIColor:json]];
@@ -96,6 +102,12 @@ RCT_CUSTOM_VIEW_PROPERTY(showUserPosition, BOOL, RNMView) {
 RCT_CUSTOM_VIEW_PROPERTY(nightMode, BOOL, RNMView) {
     if (view) {
         [view setNightMode: json ? [json boolValue]: NO];
+    }
+}
+
+RCT_CUSTOM_VIEW_PROPERTY(showsIndoors, BOOL, RNMView) {
+    if (view) {
+        [view setIndoorEnabled: json ? [json boolValue]: NO];
     }
 }
 
@@ -212,7 +224,7 @@ RCT_EXPORT_METHOD(findRoutes:(nonnull NSNumber *)reactTag json:(NSDictionary *)j
         NSMutableArray<MMKRequestPoint *> *requestPoints = [[NSMutableArray alloc] init];
 
         for (int i = 0; i < [points count]; ++i) {
-            MMKRequestPoint *requestPoint = [MMKRequestPoint requestPointWithPoint:[points objectAtIndex:i] type:MMKRequestPointTypeWaypoint pointContext:nil drivingArrivalPointId:nil];
+            MMKRequestPoint *requestPoint = [MMKRequestPoint requestPointWithPoint:[points objectAtIndex:i] type:MMKRequestPointTypeWaypoint pointContext:nil drivingArrivalPointId:nil indoorLevelId:nil];
             [requestPoints addObject:requestPoint];
         }
 
@@ -270,6 +282,19 @@ RCT_EXPORT_METHOD(getVisibleRegion:(nonnull NSNumber *)reactTag _id:(NSString *_
         }
 
         [view emitVisibleRegionToJS:_id];
+    }];
+}
+
+RCT_EXPORT_METHOD(setIndoorLevel:(nonnull NSNumber *)reactTag indoorLevelId:(NSString *_Nonnull)indoorLevelId) {
+    [self.bridge.uiManager addUIBlock:^(RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
+        RNMView *view = (RNMView *)viewRegistry[reactTag];
+
+        if (!view || ![view isKindOfClass:[RNMView class]]) {
+            RCTLogError(@"Cannot find NativeView with tag #%@", reactTag);
+            return;
+        }
+
+        [view setIndoorLevel:indoorLevelId];
     }];
 }
 

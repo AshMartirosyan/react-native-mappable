@@ -1,17 +1,21 @@
-import React from 'react';
-import { ViewProps, ImageSourcePropType, NativeSyntheticEvent } from 'react-native';
-import { Point, ScreenPoint, DrivingInfo, MasstransitInfo, RoutesFoundEvent, Vehicles, CameraPosition, VisibleRegion, InitialRegion, Animation, MapLoaded, MappableLogoPosition, MappableLogoPadding } from '../interfaces';
+import React from "react";
+import { ViewProps, ImageSourcePropType, NativeSyntheticEvent } from "react-native";
+import { Point, ScreenPoint, DrivingInfo, MasstransitInfo, RoutesFoundEvent, Vehicles, CameraPosition, VisibleRegion, InitialRegion, Animation, MapLoaded, MappableLogoPosition, MappableLogoPadding, IndoorPlan } from "../interfaces";
 export interface MappableMapProps extends ViewProps {
     userLocationIcon?: ImageSourcePropType;
     userLocationIconScale?: number;
     showUserPosition?: boolean;
     nightMode?: boolean;
+    showsIndoors?: boolean;
     mapStyle?: string;
     onCameraPositionChange?: (event: NativeSyntheticEvent<CameraPosition>) => void;
     onCameraPositionChangeEnd?: (event: NativeSyntheticEvent<CameraPosition>) => void;
     onMapPress?: (event: NativeSyntheticEvent<Point>) => void;
     onMapLongPress?: (event: NativeSyntheticEvent<Point>) => void;
     onMapLoaded?: (event: NativeSyntheticEvent<MapLoaded>) => void;
+    onEnterIndoorPlan?: (event: NativeSyntheticEvent<IndoorPlan>) => void;
+    onLeftIndoorPlan?: (event: NativeSyntheticEvent<void>) => void;
+    onActiveIndoorLevelChanged?: (event: NativeSyntheticEvent<Pick<IndoorPlan, "activeLevelId">>) => void;
     userLocationAccuracyFillColor?: string;
     userLocationAccuracyStrokeColor?: string;
     userLocationAccuracyStrokeWidth?: number;
@@ -32,7 +36,7 @@ export declare class MappableMap extends React.Component<MappableMapProps> {
         clusterColor: string;
         maxFps: number;
     };
-    map: React.RefObject<MappableMapNativeComponent>;
+    map: React.RefObject<any>;
     static ALL_MASSTRANSIT_VEHICLES: Vehicles[];
     static init(apiKey: string): Promise<void>;
     static setLocale(locale: string): Promise<void>;
@@ -51,6 +55,7 @@ export declare class MappableMap extends React.Component<MappableMapProps> {
         zoom?: number;
     }, zoom?: number, azimuth?: number, tilt?: number, duration?: number, animation?: Animation): void;
     setZoom(zoom: number, duration?: number, animation?: Animation): void;
+    setIndoorLevel(indoorLevelId: string): void;
     getCameraPosition(callback: (position: CameraPosition) => void): void;
     getVisibleRegion(callback: (VisibleRegion: VisibleRegion) => void): void;
     getScreenPoints(points: Point[], callback: (screenPoint: ScreenPoint) => void): void;

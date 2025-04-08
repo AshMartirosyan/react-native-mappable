@@ -19,6 +19,12 @@
 @property (nonatomic, copy) RCTBubblingEventBlock _Nullable onMapLoaded;
 @property (nonatomic, copy) RCTBubblingEventBlock _Nullable onWorldToScreenPointsReceived;
 @property (nonatomic, copy) RCTBubblingEventBlock _Nullable onScreenToWorldPointsReceived;
+@property (nonatomic, copy) RCTBubblingEventBlock _Nullable onEnterIndoorPlan;
+@property (nonatomic, copy) RCTBubblingEventBlock _Nullable onLeftIndoorPlan;
+@property (nonatomic, copy) RCTBubblingEventBlock _Nullable onActiveIndoorLevelChanged;
+
+
+
 
 // REF
 - (void)emitCameraPositionToJS:(NSString *_Nonnull)_id;
@@ -29,12 +35,14 @@
 - (void)fitMarkers:(NSArray<MMKPoint *> *_Nonnull)points;
 - (void)findRoutes:(NSArray<MMKRequestPoint *> *_Nonnull)points vehicles:(NSArray<NSString *> *_Nonnull)vehicles withId:(NSString *_Nonnull)_id;
 - (void)setTrafficVisible:(BOOL)traffic;
+- (void)setIndoorLevel:(NSString *_Nonnull)indoorLevelId;
 - (void)emitWorldToScreenPoint:(NSArray<MMKPoint *> *_Nonnull)points withId:(NSString*_Nonnull)_id;
 - (void)emitScreenToWorldPoint:(NSArray<MMKScreenPoint *> *_Nonnull)points withId:(NSString*_Nonnull)_id;
 - (MMKBoundingBox *_Nonnull)calculateBoundingBox:(NSArray<MMKPoint *> *_Nonnull)points;
 
 // PROPS
 - (void)setNightMode:(BOOL)nightMode;
+- (void)setIndoorEnabled:(BOOL)showsIndoors;
 - (void)setClusters:(BOOL)userClusters;
 - (void)setListenUserLocation:(BOOL)listen;
 - (void)setUserLocationIcon:(NSString *_Nullable)iconSource;

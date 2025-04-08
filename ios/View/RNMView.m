@@ -48,6 +48,7 @@
     UIColor *userLocationAccuracyStrokeColor;
     float userLocationAccuracyStrokeWidth;
     Boolean initializedRegion;
+    MMKIndoorPlan *activeIndoorPlan;
 }
 
 - (instancetype)init {
@@ -64,7 +65,7 @@
     drivingRouter = [[MMKDirectionsFactory instance] createDrivingRouterWithType:MMKDrivingRouterTypeCombined];
     pedestrianRouter = [[MMKTransportFactory instance] createPedestrianRouter];
     transitOptions = [MMKTransitOptions transitOptionsWithAvoid:MMKFilterVehicleTypesNone timeOptions:[[MMKTimeOptions alloc] init]];    acceptVehicleTypes = [[NSMutableArray<NSString *> alloc] init];
-    routeOptions = [MMKRouteOptions routeOptionsWithFitnessOptions:[MMKFitnessOptions fitnessOptionsWithAvoidSteep:false]];
+    routeOptions = [MMKRouteOptions routeOptionsWithFitnessOptions:[MMKFitnessOptions fitnessOptionsWithAvoidSteep:NO avoidStairs:NO]];
     routes = [[NSMutableArray alloc] init];
     currentRouteInfo = [[NSMutableArray alloc] init];
     lastKnownRoutePoints = [[NSMutableArray alloc] init];
@@ -84,7 +85,9 @@
     [self.mapWindow.map addCameraListenerWithCameraListener:self];
     [self.mapWindow.map addInputListenerWithInputListener:(id<MMKMapInputListener>) self];
     [self.mapWindow.map setMapLoadedListenerWithMapLoadedListener:self];
+    [self.mapWindow.map addIndoorStateListenerWithIndoorStateListener:(id<MMKIndoorStateListener>) self];
     initializedRegion = NO;
+    activeIndoorPlan = nil;
     return self;
 }
 
@@ -374,9 +377,14 @@
     initializedRegion = YES;
 }
 
+- (void)setIndoorLevel:(NSString *) indoorLevelId {
+    if (activeIndoorPlan != nil) activeIndoorPlan.activeLevelId = indoorLevelId;
+}
+
 - (void)setTrafficVisible:(BOOL)traffic {
     MMKMapKit *inst = [MMKMapKit sharedInstance];
 
+    
     if (trafficLayer == nil) {
         trafficLayer = [inst createTrafficLayerWithMapWindow:self.mapWindow];
     }
@@ -508,8 +516,52 @@
     }
 }
 
+// Indoor Listeners
+- (void)onActivePlanFocusedWithActivePlan:(nonnull MMKIndoorPlan *) activePlan{
+    activeIndoorPlan = activePlan;
+    if(self.onEnterIndoorPlan){
+        NSMutableArray *serializableLevels = [NSMutableArray array];
+        for (MMKIndoorLevel *level in activePlan.levels) {
+            NSDictionary *levelData = @{
+                @"id":  level.id,
+                @"name": level.name,
+                @"isUnderground": @(level.isUnderground)
+            };
+            [serializableLevels addObject:levelData];
+        }
+        
+        NSDictionary *data = @{
+            @"levels": serializableLevels,
+            @"activeLevelId": activePlan.activeLevelId,
+        };
+        self.onEnterIndoorPlan(data);
+    }
+}
+
+- (void)onActivePlanLeft {
+    activeIndoorPlan = nil;
+    if(self.onLeftIndoorPlan){
+        self.onLeftIndoorPlan(nil);
+    }
+}
+
+- (void)onActiveLevelChangedWithActiveLevelId:(nonnull NSString *) activeLevelId {
+    if(self.onActiveIndoorLevelChanged){
+        NSDictionary *data = @{
+            @"activeLevelId": activeLevelId,
+        };
+        self.onActiveIndoorLevelChanged(data);
+    }
+}
+
+
+
 - (void)setNightMode:(BOOL)nightMode {
     [self.mapWindow.map setNightModeEnabled:nightMode];
+}
+
+- (void)setIndoorEnabled:(BOOL)showsIndoors {
+    [self.mapWindow.map setIndoorEnabled:showsIndoors];
 }
 
 

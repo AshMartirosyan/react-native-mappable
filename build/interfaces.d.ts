@@ -28,8 +28,8 @@ export interface InitialRegion {
     azimuth?: number;
     tilt?: number;
 }
-export type MasstransitVehicles = 'bus' | 'trolleybus' | 'tramway' | 'minibus' | 'suburban' | 'underground' | 'ferry' | 'cable' | 'funicular';
-export type Vehicles = MasstransitVehicles | 'walk' | 'car';
+export type MasstransitVehicles = "bus" | "trolleybus" | "tramway" | "minibus" | "suburban" | "underground" | "ferry" | "cable" | "funicular";
+export type Vehicles = MasstransitVehicles | "walk" | "car";
 export interface DrivingInfo {
     time: string;
     timeWithTraffic: string;
@@ -40,7 +40,7 @@ export interface MasstransitInfo {
     transferCount: number;
     walkingDistance: number;
 }
-export interface RouteInfo<T extends (DrivingInfo | MasstransitInfo)> {
+export interface RouteInfo<T extends DrivingInfo | MasstransitInfo> {
     id: string;
     sections: {
         points: Point[];
@@ -53,8 +53,8 @@ export interface RouteInfo<T extends (DrivingInfo | MasstransitInfo)> {
         sectionColor?: string;
     }[];
 }
-export interface RoutesFoundEvent<T extends (DrivingInfo | MasstransitInfo)> {
-    status: 'success' | 'error';
+export interface RoutesFoundEvent<T extends DrivingInfo | MasstransitInfo> {
+    status: "success" | "error";
     id: string;
     routes: RouteInfo<T>[];
 }
@@ -63,7 +63,7 @@ export interface CameraPosition {
     tilt: number;
     azimuth: number;
     point: Point;
-    reason: 'GESTURES' | 'APPLICATION';
+    reason: "GESTURES" | "APPLICATION";
     finished: boolean;
 }
 export type VisibleRegion = {
@@ -77,10 +77,19 @@ export declare enum Animation {
     LINEAR = 1
 }
 export type MappableLogoPosition = {
-    horizontal?: 'left' | 'center' | 'right';
-    vertical?: 'top' | 'bottom';
+    horizontal?: "left" | "center" | "right";
+    vertical?: "top" | "bottom";
 };
 export type MappableLogoPadding = {
     horizontal?: number;
     vertical?: number;
+};
+export type IndoorLevel = {
+    id: string;
+    name: string;
+    isUnderground?: boolean;
+};
+export type IndoorPlan = {
+    levels: Array<IndoorLevel>;
+    activeLevelId: string;
 };

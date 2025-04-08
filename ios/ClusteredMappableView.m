@@ -210,7 +210,7 @@ RCT_EXPORT_METHOD(findRoutes:(nonnull NSNumber*) reactTag json:(NSDictionary*) j
         NSArray<MMKPoint*>* points = [RCTConvert Points:json[@"points"]];
         NSMutableArray<MMKRequestPoint*>* requestPoints = [[NSMutableArray alloc] init];
         for (int i = 0; i < [points count]; ++i) {
-            MMKRequestPoint * requestPoint = [MMKRequestPoint requestPointWithPoint:[points objectAtIndex:i] type:MMKRequestPointTypeWaypoint pointContext:nil drivingArrivalPointId:nil];
+            MMKRequestPoint * requestPoint = [MMKRequestPoint requestPointWithPoint:[points objectAtIndex:i] type:MMKRequestPointTypeWaypoint pointContext:nil drivingArrivalPointId:nil indoorLevelId:nil];
             [requestPoints addObject:requestPoint];
         }
         NSArray<NSString*>* vehicles = [RCTConvert Vehicles:json[@"vehicles"]];
